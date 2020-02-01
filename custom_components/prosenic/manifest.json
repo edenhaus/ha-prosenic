@@ -1,0 +1,10 @@
+{
+  "domain": "prosenic",
+  "name": "Prosenic",
+  "documentation": "https://github.com/edenhaus/ha-prosenic/blob/master/README.md",
+  "requirements": ["pycryptodome==3.9.4", "pytuya==7.0.5"],
+  "dependencies": [],
+  "codeowners": [
+    "@edenhaus"
+  ]
+}
