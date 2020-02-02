@@ -38,7 +38,6 @@ _LOGGER = logging.getLogger(__name__)
 
 DEFAULT_NAME = "Prosenic Vacuum cleaner"
 CONF_LOCAL_KEY = "local_key"
-CONF_MODEL = "model"
 DATA_KEY = f"{VACUUM_DOMAIN}.{DOMAIN}"
 
 ATTR_MOP_EQUIPT = "mob_equipt"
@@ -46,16 +45,11 @@ ATTR_CLEANING_TIME = "cleaning_time"
 ATTR_ERROR = "error"
 
 
-class MODEL(Enum):
-    _820T = "820T"
-
-
 PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
     {
         vol.Required(CONF_HOST): cv.string,
         vol.Required(CONF_DEVICE_ID): cv.string,
         vol.Required(CONF_LOCAL_KEY): vol.All(str, vol.Length(min=15, max=16)),
-        vol.Required(CONF_MODEL): cv.enum(MODEL),
         vol.Optional(CONF_NAME, default=DEFAULT_NAME): cv.string,
     },
     extra=vol.ALLOW_EXTRA,

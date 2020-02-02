@@ -1,7 +1,8 @@
 {
   "name": "Prosenic vacuum cleaner",
-  "render_readme": true,
   "domains": [ "vacuum"],
   "country": ["IT", "AT"],
-  "iot_class": "Local Polling"
+  "iot_class": "Local Polling",
+  "zip_release": true,
+  "filename": "prosenic.zip"
 }

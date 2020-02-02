@@ -1,48 +1,8 @@
 [![License][license-shield]](LICENSE.md) ![Project Maintenance][maintenance-shield]
 
-[![hacs][hacsbadge]](hacs)
-
 # Prosenic Home Assistant component
 A full featured Homeassistant component to control Prosenic vacuum cleaner locally without the cloud. 
 This component is based on the underlying PyTuya library available [here](pytuya).
-
-## Towards Homeassistant official integration
-My personal goal is to make this component fully compliant with Homeassistant, so 
-that it may be added as the official library to handle Prosenic vacuum cleaners. 
-However, before pushing a PullRequest to the official Homeassistant repository, I would like to share it to some users.
-In this way we can test it massively, check it for any bug and make it **robust enough** to be seamlessly integrated 
-with Homeassistant.
-
-For now, the component has been integrated as a custom component into [HACS](hacs).
-
-## Installation
-You can install this component in two ways: via HACS or manually.
-HACS is a nice community-maintained components manager, which allows you to install git-hub hosted components in a few clicks.
-If you have already HACS installed on your HomeAssistant, it's better to go with that.
-On the other hand, if you don't have HACS installed or if you don't plan to install it, then you can use manual installation.
-
-## Option A: Installing via HACS
-Go to settings and add this repository as integration.
-Afterwards search for "Prosenic Vacuum Cleaner" and click on Install: when done, proceed with component setup.
-
-## Option B: Classic installation (custom_component)
-1. Download the latest zip release archive from [here](release-zip) (or clone the git master branch)
-1. Unzip/copy the prosenic direcotry within the `custom_components` directory of your homeassistant installation.
-The `custom_components` directory resides within your homeassistant configuration directory.
-In other words, the configuration directory of homeassistant is where the configuration.yaml file is located.
-After a correct installation, your configuration directory should look like the following.
-    ```
-    └── ...
-    └── configuration.yaml
-    └── secrects.yaml
-    └── custom_components
-        └── prosenic
-            └── __init__.py
-            └── const.py
-            └── ...
-    ```
-
-    **Note**: if the custom_components directory does not exist, you need to create it.
 
 ## Component setup    
 Once the component has been installed, you need to configure it in order to make it work.
