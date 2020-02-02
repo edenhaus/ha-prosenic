@@ -1,0 +1,7 @@
+{
+  "name": "Prosenic vacuum cleaner",
+  "render_readme": true,
+  "domains": [ "vacuum"],
+  "country": ["IT", "AT"],
+  "iot_class": "Local Polling"
+}
