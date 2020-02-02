@@ -7,4 +7,4 @@ rm -vR $RELEASE
 mkdir $RELEASE
 
 # zip the prosenic sources
-zip -r $RELEASE/prosenic.zip custom_components/prosenic
+zip -jr $RELEASE/prosenic.zip custom_components/prosenic
