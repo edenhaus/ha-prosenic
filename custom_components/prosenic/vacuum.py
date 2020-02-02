@@ -189,7 +189,7 @@ class ProsenicVacuum(StateVacuumDevice):
     def fan_speed_list(self):
         """Get the list of available fan speed steps of the vacuum cleaner."""
         f: FanSpeed
-        return [f.tuya_value for f in FanSpeed]
+        return [f.value for f in FanSpeed]
 
     @property
     def should_poll(self):
