@@ -1,7 +1,7 @@
 """Support for the Prosenic vacuum cleaner robot."""
 import logging
-from enum import Enum
-from typing import Optional
+from enum import Enum, IntFlag
+from typing import Optional, Union, Dict
 
 import homeassistant.helpers.config_validation as cv
 import voluptuous as vol
@@ -44,7 +44,6 @@ ATTR_MOP_EQUIPT = "mob_equipt"
 ATTR_CLEANING_TIME = "cleaning_time"
 ATTR_ERROR = "error"
 
-
 PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
     {
         vol.Required(CONF_HOST): cv.string,
@@ -66,17 +65,46 @@ SUPPORT_PROSENIC = (
         | SUPPORT_PAUSE
 )
 
-STATE_CODE_TO_STATE = {
-    0: STATE_IDLE,
-    1: STATE_CLEANING,
-    2: STATE_CLEANING,
-    3: STATE_CLEANING,
-    4: STATE_RETURNING,
-    5: STATE_DOCKED,
-    6: STATE_CLEANING,
-    7: STATE_PAUSED,
-    8: STATE_CLEANING
-}
+
+class Fault(IntFlag):
+    NO_ERROR = 0
+    SIDE_BRUSH = 1
+    ROLLER_BRUSH = 2
+    LEFT_WHEEL = 4
+    RIGHT_WHEEL = 8
+    DUST_BIN = 16
+    OFF_GROUND = 32
+    COLLISION_SENSOR = 64
+    WATER_TANK = 128
+    VIRTUAL_WALL = 256
+    TRAPPED = 512
+    UNKNOWN = 1024
+
+
+class CurrentState(Enum):
+    def __new__(cls, *args, **kwds):
+        obj = object.__new__(cls)
+        obj._value_ = args[0]
+        return obj
+
+    # ignore the first param since it's already set by __new__
+    def __init__(self, _: int, ha_sate: str):
+        self._ha_sate_ = ha_sate
+
+    @property
+    def ha_sate(self) -> str:
+        """Returns the corresponding state, defined by HA"""
+        return self._ha_sate_
+
+    STAND_BY = 0, STATE_IDLE, None
+    CLEAN_SMART = 1, STATE_CLEANING
+    MOPPING = 2, STATE_CLEANING
+    CLEAN_WALL_FOLLOW = 3, STATE_CLEANING
+    GOING_CHARGING = 4, STATE_RETURNING
+    CHARGING = 5, STATE_DOCKED
+    #    ??? = 6, ??? todo find it out
+    PAUSE = 7, STATE_PAUSED
+    CLEAN_SINGLE = 8, STATE_CLEANING
 
 
 # rw=read/write, ro=read only
@@ -148,9 +176,13 @@ class ProsenicVacuum(StateVacuumDevice):
         self._name = name
         self._device = device
 
-        self._state = dict()
-        self._last_command: Optional[CleaningMode] = None
         self._available = False
+        self._current_state: Optional[CurrentState] = None
+        self._last_command: Optional[CleaningMode] = None
+        self._battery: Optional[int] = None
+        self._fault: Fault = Fault.NO_ERROR
+        self._fan_speed: FanSpeed = FanSpeed.NORMAL
+        self._additional_attr: Dict[str, Union[bool, str, int]] = dict()
 
     @property
     def name(self) -> str:
@@ -160,30 +192,23 @@ class ProsenicVacuum(StateVacuumDevice):
     @property
     def state(self) -> STATES:
         """Return the status of the vacuum cleaner."""
-        try:
-            if self._get_field(Fields.FAULT) != 0:
-                return STATE_ERROR
+        if self._fault != Fault.NO_ERROR:
+            return STATE_ERROR
 
-            return STATE_CODE_TO_STATE[int(self._get_field(Fields.CURRENT_STATE))]
-        except (KeyError, ValueError):
-            _LOGGER.error(
-                "STATE not supported: %d",
-                self._state,
-            )
+        if self._current_state is None:
             return None
+        else:
+            return self._current_state.ha_sate
 
     @property
     def battery_level(self) -> Optional[int]:
         """Return the battery level of the vacuum cleaner."""
-        try:
-            return int(self._get_field(Fields.BATTERY))
-        except ValueError:
-            return None
+        return self._battery
 
     @property
     def fan_speed(self):
         """Return the fan speed of the vacuum cleaner."""
-        return self._get_field(Fields.FAN_SPEED)
+        return self._fan_speed.value
 
     @property
     def fan_speed_list(self):
@@ -198,23 +223,7 @@ class ProsenicVacuum(StateVacuumDevice):
     @property
     def device_state_attributes(self):
         """Return the specific state attributes of this vacuum cleaner."""
-        attrs = {}
-        if self._state:
-            attrs.update(
-                {
-                    ATTR_MOP_EQUIPT: True
-                    if self._get_field(Fields.SWEEP_OR_MOP) == "mop"
-                    else False,
-
-                    ATTR_CLEANED_AREA: int(self._get_field(Fields.CLEAN_AREA)),
-                    ATTR_CLEANING_TIME: int(self._get_field(Fields.CLEAN_TIME)),
-                }
-            )
-
-            error = self._get_field(Fields.FAULT)
-            if error != 0:
-                attrs[ATTR_ERROR] = error
-        return attrs
+        return self._additional_attr
 
     @property
     def available(self) -> bool:
@@ -229,18 +238,18 @@ class ProsenicVacuum(StateVacuumDevice):
     @property
     def direction_list(self):
         """Get the list of available direction controls of the vacuum cleaner."""
-        return [d.name.lower() for d in DirectionControl]
+        return [d.value for d in DirectionControl]
 
     def start(self):
         """Start or resume the cleaning task."""
-        if self._last_command is not None:
+        if self._last_command is not None and self._current_state == CurrentState.PAUSE:
             self._execute_command(Fields.CLEANING_MODE, self._last_command)
         else:
             self._execute_command(Fields.CLEANING_MODE, CleaningMode.SMART)
 
     def pause(self):
         """Pause the cleaning task."""
-        if self._last_command is not None:
+        if self._last_command is not None and self._current_state != CurrentState.PAUSE:
             self._execute_command(Fields.CLEANING_MODE, self._last_command)
 
     def stop(self, **kwargs):
@@ -255,10 +264,10 @@ class ProsenicVacuum(StateVacuumDevice):
         """Perform a spot clean-up."""
         self._execute_command(Fields.CLEANING_MODE, CleaningMode.SPRIAL)
 
-    def set_fan_speed(self, fan_speed, **kwargs):
+    def set_fan_speed(self, fan_speed: str, **kwargs):
         """Set fan speed."""
         try:
-            self._execute_command(Fields.FAN_SPEED, FanSpeed[fan_speed.upper()])
+            self._execute_command(Fields.FAN_SPEED, FanSpeed(fan_speed))
         except Exception:
             _LOGGER.error(
                 "Fan speed not recognized (%s). Valid speeds are: %s",
@@ -269,7 +278,8 @@ class ProsenicVacuum(StateVacuumDevice):
     def update(self):
         """Fetch state from the device."""
         try:
-            self._state = self._device.status()["dps"]
+            state = self._device.status()["dps"]
+            self._parse_status_fields(state)
 
             self._available = True
         except Exception as e:
@@ -303,15 +313,46 @@ class ProsenicVacuum(StateVacuumDevice):
                 value
             )
 
-    def _get_field(self, field: Fields):
-        """Tries to retrieve the passed field from the current state"""
-        field_str = str(field.value)
-        try:
-            return self._state[field_str]
-        except KeyError:
-            _LOGGER.error(
-                "Could not find field %s in the current state. The current state is %s",
-                field_str,
-                self._state
-            )
-            return None
+    def _parse_status_fields(self, state: Dict[str, Union[str, int, float, bool]]):
+        """Tries to parse the state into the corresponding fields"""
+        for k, v in state.items():
+            try:
+                field = Fields(k)
+                if field in (Fields.POWER, Fields.CLEANING_MODE, Fields.DIRECTION_CONTROL):
+                    continue
+
+                elif field == Fields.FAULT:
+                    self._fault = Fault(int(v))
+                    # TODO add nice error text
+                    if (self._fault != Fault.NO_ERROR):
+                        self._additional_attr[ATTR_ERROR] = self._fault.name
+
+                elif field == Fields.FAN_SPEED:
+                    self._fan_speed = FanSpeed(v)
+
+                elif field == Fields.CURRENT_STATE:
+                    self._current_state = Fault(int(v))
+
+                elif field == Fields.BATTERY:
+                    self._battery = int(v)
+
+                elif field == Fields.CLEAN_RECORD:
+                    # TODO parsing
+                    continue
+
+                elif field == Fields.CLEAN_AREA:
+                    self._additional_attr[ATTR_CLEANED_AREA] = v
+
+                elif field == Fields.CLEAN_TIME:
+                    self._additional_attr[ATTR_CLEANING_TIME] = int(v)
+
+                elif field == Fields.SWEEP_OR_MOP:
+                    self._additional_attr[ATTR_MOP_EQUIPT] = bool(v)
+
+            except (KeyError, ValueError):
+                _LOGGER.warning(
+                    "An error occurred during the processing of the following item (%s:%s)",
+                    k,
+                    v
+                )
+                continue
