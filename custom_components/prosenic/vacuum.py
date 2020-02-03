@@ -96,7 +96,7 @@ class CurrentState(Enum):
         """Returns the corresponding state, defined by HA"""
         return self._ha_sate_
 
-    STAND_BY = 0, STATE_IDLE, None
+    STAND_BY = 0, STATE_IDLE
     CLEAN_SMART = 1, STATE_CLEANING
     MOPPING = 2, STATE_CLEANING
     CLEAN_WALL_FOLLOW = 3, STATE_CLEANING
@@ -317,7 +317,7 @@ class ProsenicVacuum(StateVacuumDevice):
         """Tries to parse the state into the corresponding fields"""
         for k, v in state.items():
             try:
-                field = Fields(k)
+                field = Fields(int(k))
                 if field in (Fields.POWER, Fields.CLEANING_MODE, Fields.DIRECTION_CONTROL):
                     continue
 
@@ -331,7 +331,7 @@ class ProsenicVacuum(StateVacuumDevice):
                     self._fan_speed = FanSpeed(v)
 
                 elif field == Fields.CURRENT_STATE:
-                    self._current_state = Fault(int(v))
+                    self._current_state = CurrentState(int(v))
 
                 elif field == Fields.BATTERY:
                     self._battery = int(v)
