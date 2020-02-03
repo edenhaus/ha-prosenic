@@ -4,5 +4,6 @@
   "country": ["IT", "AT"],
   "iot_class": "Local Polling",
   "zip_release": true,
-  "filename": "prosenic.zip"
+  "filename": "prosenic.zip",
+  "hide_default_branch": true
 }
