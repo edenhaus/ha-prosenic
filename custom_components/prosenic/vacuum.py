@@ -324,7 +324,11 @@ class ProsenicVacuum(StateVacuumDevice):
                 elif field == Fields.FAULT:
                     self._fault = Fault(int(v))
                     # TODO add nice error text
-                    if (self._fault != Fault.NO_ERROR):
+                    if self._fault == Fault.NO_ERROR:
+                        # second value (default value) of pop is required, otherwise it will throw an KeyError,
+                        # if the key doesn't exists
+                        self._additional_attr.pop(ATTR_ERROR, None)
+                    else:
                         self._additional_attr[ATTR_ERROR] = self._fault.name
 
                 elif field == Fields.FAN_SPEED:
