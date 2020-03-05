@@ -1,6 +1,8 @@
 """Support for the Prosenic vacuum cleaner robot."""
+import asyncio
 import logging
 from enum import Enum, IntFlag
+from functools import partial
 from typing import Optional, Union, Dict
 
 import homeassistant.helpers.config_validation as cv
@@ -20,11 +22,9 @@ from homeassistant.components.vacuum import (
     SUPPORT_STATE,
     SUPPORT_STOP,
     StateVacuumDevice,
-    STATES,
     SUPPORT_PAUSE,
     STATE_RETURNING,
-    ATTR_CLEANED_AREA,
-    DOMAIN as VACUUM_DOMAIN
+    ATTR_CLEANED_AREA
 )
 from homeassistant.const import (
     CONF_HOST,
@@ -32,17 +32,20 @@ from homeassistant.const import (
     CONF_DEVICE_ID)
 from pytuya import Device
 
-from .const import DOMAIN
+from .const import (
+    CONF_LOCAL_KEY,
+    DEFAULT_NAME,
+    CONF_REMEMBER_FAN_SPEED,
+    ATTR_ERROR,
+    ATTR_CLEANING_TIME,
+    ATTR_MOP_EQUIPPED,
+    REMEMBER_FAN_SPEED_DELAY,
+    DATA_KEY,
+    STATE_MOPPING,
+    STATES
+)
 
 _LOGGER = logging.getLogger(__name__)
-
-DEFAULT_NAME = "Prosenic Vacuum cleaner"
-CONF_LOCAL_KEY = "local_key"
-DATA_KEY = f"{VACUUM_DOMAIN}.{DOMAIN}"
-
-ATTR_MOP_EQUIPT = "mob_equipt"
-ATTR_CLEANING_TIME = "cleaning_time"
-ATTR_ERROR = "error"
 
 PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
     {
@@ -50,6 +53,7 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
         vol.Required(CONF_DEVICE_ID): cv.string,
         vol.Required(CONF_LOCAL_KEY): vol.All(str, vol.Length(min=15, max=16)),
         vol.Optional(CONF_NAME, default=DEFAULT_NAME): cv.string,
+        vol.Optional(CONF_REMEMBER_FAN_SPEED, default=False): cv.boolean
     },
     extra=vol.ALLOW_EXTRA,
 )
@@ -98,7 +102,7 @@ class CurrentState(Enum):
 
     STAND_BY = 0, STATE_IDLE
     CLEAN_SMART = 1, STATE_CLEANING
-    MOPPING = 2, STATE_CLEANING
+    MOPPING = 2, STATE_MOPPING
     CLEAN_WALL_FOLLOW = 3, STATE_CLEANING
     GOING_CHARGING = 4, STATE_RETURNING
     CHARGING = 5, STATE_DOCKED
@@ -155,6 +159,7 @@ async def async_setup_platform(hass, config, async_add_entities, discovery_info=
     device_id = config[CONF_DEVICE_ID]
     local_key = config[CONF_LOCAL_KEY]
     name = config[CONF_NAME]
+    remember_fan_speed = config[CONF_REMEMBER_FAN_SPEED]
 
     # Create handler
     _LOGGER.info("Initializing with host %s", host)
@@ -162,7 +167,7 @@ async def async_setup_platform(hass, config, async_add_entities, discovery_info=
     device = Device(device_id, host, local_key, "device")
     device.version = 3.3
 
-    robot = ProsenicVacuum(name, device)
+    robot = ProsenicVacuum(name, device, remember_fan_speed)
     hass.data[DATA_KEY][host] = robot
 
     async_add_entities([robot], update_before_add=True)
@@ -171,10 +176,11 @@ async def async_setup_platform(hass, config, async_add_entities, discovery_info=
 class ProsenicVacuum(StateVacuumDevice):
     """Representation of a Prosenic Vacuum cleaner robot."""
 
-    def __init__(self, name: str, device: Device):
+    def __init__(self, name: str, device: Device, remember_fan_speed: bool):
         """Initialize the Prosenic vacuum cleaner robot."""
         self._name = name
         self._device = device
+        self._remember_fan_speed = remember_fan_speed
 
         self._available = False
         self._current_state: Optional[CurrentState] = None
@@ -182,7 +188,9 @@ class ProsenicVacuum(StateVacuumDevice):
         self._battery: Optional[int] = None
         self._fault: Fault = Fault.NO_ERROR
         self._fan_speed: FanSpeed = FanSpeed.NORMAL
+        self._stored_fan_speed: FanSpeed = self._fan_speed
         self._additional_attr: Dict[str, Union[bool, str, int]] = dict()
+        self._mop_equipped: bool = False
 
     @property
     def name(self) -> str:
@@ -190,7 +198,7 @@ class ProsenicVacuum(StateVacuumDevice):
         return self._name
 
     @property
-    def state(self) -> STATES:
+    def state(self) -> Optional[STATES]:
         """Return the status of the vacuum cleaner."""
         if self._fault != Fault.NO_ERROR:
             return STATE_ERROR
@@ -240,34 +248,41 @@ class ProsenicVacuum(StateVacuumDevice):
         """Get the list of available direction controls of the vacuum cleaner."""
         return [d.value for d in DirectionControl]
 
-    def start(self):
+    async def async_start(self):
         """Start or resume the cleaning task."""
         if self._last_command is not None and self._current_state == CurrentState.PAUSE:
-            self._execute_command(Fields.CLEANING_MODE, self._last_command)
+            await self._execute_command(Fields.CLEANING_MODE, self._last_command)
         else:
-            self._execute_command(Fields.CLEANING_MODE, CleaningMode.SMART)
+            cleaning_mode = CleaningMode.SMART
 
-    def pause(self):
+            if self._mop_equipped:
+                cleaning_mode = CleaningMode.MOP
+
+            await self._execute_command(Fields.CLEANING_MODE, cleaning_mode)
+
+    async def async_pause(self):
         """Pause the cleaning task."""
         if self._last_command is not None and self._current_state != CurrentState.PAUSE:
-            self._execute_command(Fields.CLEANING_MODE, self._last_command)
+            await self._execute_command(Fields.CLEANING_MODE, self._last_command)
 
-    def stop(self, **kwargs):
+    async def async_stop(self, **kwargs):
         """Stop the vacuum cleaner."""
-        self._execute_command(Fields.DIRECTION_CONTROL, DirectionControl.STOP)
+        await self._execute_command(Fields.DIRECTION_CONTROL, DirectionControl.STOP)
 
-    def return_to_base(self, **kwargs):
+    async def async_return_to_base(self, **kwargs):
         """Set the vacuum cleaner to return to the dock."""
-        self._execute_command(Fields.CLEANING_MODE, CleaningMode.CHARGE_GO)
+        await self._execute_command(Fields.CLEANING_MODE, CleaningMode.CHARGE_GO)
 
-    def clean_spot(self, **kwargs):
+    async def async_clean_spot(self, **kwargs):
         """Perform a spot clean-up."""
-        self._execute_command(Fields.CLEANING_MODE, CleaningMode.SPRIAL)
+        await self._execute_command(Fields.CLEANING_MODE, CleaningMode.SPRIAL)
 
-    def set_fan_speed(self, fan_speed: str, **kwargs):
+    async def async_set_fan_speed(self, fan_speed: str, **kwargs):
         """Set fan speed."""
         try:
-            self._execute_command(Fields.FAN_SPEED, FanSpeed(fan_speed))
+            value = FanSpeed(fan_speed)
+            await self._execute_command(Fields.FAN_SPEED, value)
+            self._stored_fan_speed = value
         except Exception:
             _LOGGER.error(
                 "Fan speed not recognized (%s). Valid speeds are: %s",
@@ -286,10 +301,10 @@ class ProsenicVacuum(StateVacuumDevice):
             _LOGGER.error("Got exception while fetching the state: %s", e)
             self._available = False
 
-    def remote_control(self, direction: str):
+    async def async_remote_control(self, direction: str):
         """Move vacuum with remote control mode."""
         try:
-            self._execute_command(Fields.DIRECTION_CONTROL, DirectionControl[direction.upper()])
+            await self._execute_command(Fields.DIRECTION_CONTROL, DirectionControl[direction.upper()])
         except KeyError:
             _LOGGER.error(
                 "Direction not recognized (%s). Valid directions are: %s",
@@ -297,7 +312,7 @@ class ProsenicVacuum(StateVacuumDevice):
                 self.direction_list,
             )
 
-    def _execute_command(self, field: Fields, value: Enum):
+    async def _execute_command(self, field: Fields, value: Enum):
         """Send command to vacuum robot by setting the correct field"""
         try:
             if field == Fields.CLEANING_MODE:
@@ -305,7 +320,12 @@ class ProsenicVacuum(StateVacuumDevice):
             else:
                 self._last_command = None
 
-            self._device.set_value(field.value, value.value)
+            await self.hass.async_add_executor_job(
+                partial(self._device.set_value, field.value, value.value)
+            )
+
+            if self._remember_fan_speed:
+                await self._wait_and_set_stored_fan_speed()
         except Exception:
             _LOGGER.error(
                 "Could not execute command &s with value %s",
@@ -351,7 +371,7 @@ class ProsenicVacuum(StateVacuumDevice):
                     self._additional_attr[ATTR_CLEANING_TIME] = int(v)
 
                 elif field == Fields.SWEEP_OR_MOP:
-                    self._additional_attr[ATTR_MOP_EQUIPT] = bool(v)
+                    self._additional_attr[ATTR_MOP_EQUIPPED] = self._mop_equipped = bool(v)
 
             except (KeyError, ValueError):
                 _LOGGER.warning(
@@ -360,3 +380,9 @@ class ProsenicVacuum(StateVacuumDevice):
                     v
                 )
                 continue
+
+    async def _wait_and_set_stored_fan_speed(self):
+        _LOGGER.debug("Wainting %d seconds before setting the fan speed")
+        await asyncio.sleep(REMEMBER_FAN_SPEED_DELAY)
+
+        await self._execute_command(Fields.FAN_SPEED, self._stored_fan_speed)

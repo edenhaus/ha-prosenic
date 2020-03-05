@@ -5,7 +5,7 @@ services:
   homeassistant:
       image: homeassistant/home-assistant
       volumes:
-        #- "ha-config:/config"
+        - "ha-config:/config"
         - ./custom_components/:/config/custom_components/
         - ./configuration.yaml:/config/configuration.yaml
       ports:
