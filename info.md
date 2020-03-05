@@ -83,12 +83,13 @@ nmap -p 6668 192.168.0.0/24 --open
 
 1. Enable the component by editing the configuration.yaml file (within the config directory as well).
 Edit it by adding the following lines:
-    ```
+    ```yaml
     vacuum:
       - platform: prosenic
         host: YOUR_IP
         device_id: YOUR_DEVICE_ID
         local_key: YOUR_KEY
+        remember_fan_speed: false #Optional, default false
     ```
     **Note!** If you have already configured other vacuum robot, add your configuration there.
 

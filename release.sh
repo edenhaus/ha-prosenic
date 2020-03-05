@@ -7,4 +7,4 @@ rm -vR $RELEASE
 mkdir $RELEASE
 
 # zip the prosenic sources
-zip -jr $RELEASE/prosenic.zip custom_components/prosenic
+cd custom_components/prosenic; zip -r ../../$RELEASE/prosenic.zip . -x "__pycache__/*"

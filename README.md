@@ -22,8 +22,7 @@ If you have already HACS installed on your HomeAssistant, it's better to go with
 On the other hand, if you don't have HACS installed or if you don't plan to install it, then you can use manual installation.
 
 ## Option A: Installing via HACS
-Go to settings and add this repository as integration.
-Afterwards search for "Prosenic Vacuum Cleaner" and click on Install: when done, proceed with component setup.
+Search for "Prosenic Vacuum Cleaner" and click on Install: when done, proceed with component setup.
 
 ## Option B: Classic installation (custom_component)
 1. Download the latest zip release archive from [here](release-zip) (or clone the git master branch)
@@ -123,12 +122,13 @@ nmap -p 6668 192.168.0.0/24 --open
 
 1. Enable the component by editing the configuration.yaml file (within the config directory as well).
 Edit it by adding the following lines:
-    ```
+    ```yaml
     vacuum:
       - platform: prosenic
         host: YOUR_IP
         device_id: YOUR_DEVICE_ID
         local_key: YOUR_KEY
+        remember_fan_speed: false #Optional, default false
     ```
     **Note!** If you have already configured other vacuum robot, add your configuration there.
 
@@ -150,7 +150,7 @@ If you find a problem/bug or you have a feature request, please open an issue.
 - Automated test
 
 [hacs]: https://hacs.xyz
-[hacsbadge]: https://img.shields.io/badge/HACS-CUSTOM-inactive?style=for-the-badge
+[hacsbadge]: https://img.shields.io/badge/HACS-DEFAULT-inactive?style=for-the-badge
 [license-shield]: https://img.shields.io/github/license/edenhaus/ha-prosenic?style=for-the-badge
 [maintenance-shield]: https://img.shields.io/badge/Maintainer-Robert%20Resch-blue?style=for-the-badge
 [pytuya]: https://github.com/clach04/python-tuya
