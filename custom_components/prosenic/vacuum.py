@@ -311,14 +311,14 @@ class ProsenicVacuum(StateVacuumDevice):
         try:
             if field == Fields.CLEANING_MODE:
                 self._last_command = value
-            else:
+            elif field == Fields.DIRECTION_CONTROL:
                 self._last_command = None
 
             await self.hass.async_add_executor_job(
                 partial(self._device.set_value, field.value, value.value)
             )
 
-            if self._remember_fan_speed:
+            if self._remember_fan_speed and field == Fields.CLEANING_MODE:
                 await self._wait_and_set_stored_fan_speed()
         except Exception:
             _LOGGER.error(
