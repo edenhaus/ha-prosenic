@@ -190,7 +190,6 @@ class ProsenicVacuum(StateVacuumDevice):
         self._fan_speed: FanSpeed = FanSpeed.NORMAL
         self._stored_fan_speed: FanSpeed = self._fan_speed
         self._additional_attr: Dict[str, Union[bool, str, int]] = dict()
-        self._mop_equipped: bool = False
 
     @property
     def name(self) -> str:
@@ -253,12 +252,7 @@ class ProsenicVacuum(StateVacuumDevice):
         if self._last_command is not None and self._current_state == CurrentState.PAUSE:
             await self._execute_command(Fields.CLEANING_MODE, self._last_command)
         else:
-            cleaning_mode = CleaningMode.SMART
-
-            if self._mop_equipped:
-                cleaning_mode = CleaningMode.MOP
-
-            await self._execute_command(Fields.CLEANING_MODE, cleaning_mode)
+            await self._execute_command(Fields.CLEANING_MODE, CleaningMode.SMART)
 
     async def async_pause(self):
         """Pause the cleaning task."""
@@ -371,7 +365,7 @@ class ProsenicVacuum(StateVacuumDevice):
                     self._additional_attr[ATTR_CLEANING_TIME] = int(v)
 
                 elif field == Fields.SWEEP_OR_MOP:
-                    self._additional_attr[ATTR_MOP_EQUIPPED] = self._mop_equipped = bool(v)
+                    self._additional_attr[ATTR_MOP_EQUIPPED] = bool(v)
 
             except (KeyError, ValueError):
                 _LOGGER.warning(
