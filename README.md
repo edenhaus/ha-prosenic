@@ -1,10 +1,10 @@
 [![License][license-shield]](LICENSE.md) ![Project Maintenance][maintenance-shield]
 
-[![hacs][hacsbadge]](hacs)
+[![hacs][hacsbadge]][hacs]
 
 # Prosenic Home Assistant component
 A full featured Homeassistant component to control Prosenic vacuum cleaner locally without the cloud. 
-This component is based on the underlying PyTuya library available [here](pytuya).
+This component is based on the underlying PyTuya library available [here][pytuya].
 
 ## Towards Homeassistant official integration
 My personal goal is to make this component fully compliant with Homeassistant, so 
@@ -13,7 +13,7 @@ However, before pushing a PullRequest to the official Homeassistant repository, 
 In this way we can test it massively, check it for any bug and make it **robust enough** to be seamlessly integrated 
 with Homeassistant.
 
-For now, the component has been integrated as a custom component into [HACS](hacs).
+For now, the component has been integrated as a custom component into [HACS][hacs].
 
 ## Installation
 You can install this component in two ways: via HACS or manually.
@@ -25,7 +25,7 @@ On the other hand, if you don't have HACS installed or if you don't plan to inst
 Search for "Prosenic Vacuum Cleaner" and click on Install: when done, proceed with component setup.
 
 ## Option B: Classic installation (custom_component)
-1. Download the latest zip release archive from [here](release-zip) (or clone the git master branch)
+1. Download the latest zip release archive from [here][release-zip] (or clone the git master branch)
 1. Unzip/copy the prosenic direcotry within the `custom_components` directory of your homeassistant installation.
 The `custom_components` directory resides within your homeassistant configuration directory.
 In other words, the configuration directory of homeassistant is where the configuration.yaml file is located.
@@ -48,11 +48,11 @@ Once the component has been installed, you need to configure it in order to make
 First we need to find out the _device_id_, _ip address_ and _local key_ of your prosenic vacuum cleaner.
 Todo that you have multiple options:
  * Use *mitmproxy* to intercept the connection between the prosenic app and the tuya cloud (Described below and I used this approach)
- * Read the following [link](tuyaapi-docs)
+ * Read the following [link][tuyaapi-docs]
      
 ### Extracting the required data with mitmproxy.
 
-1. First we need to setup mitmproxy. The easiest way is to setup a docker container. Other installation type can be found [here](mitmproxy-install)
+1. First we need to setup mitmproxy. The easiest way is to setup a docker container. Other installation type can be found [here][mitmproxy-install]
     Below the docker-compose script, which will setup mitmproxy on port 8080 with the web interface on port 8081
     ```yaml
     version: "3.3"
@@ -66,9 +66,9 @@ Todo that you have multiple options:
     ```
 1. 
     * If you have an iPhone or iPad, use please one of these device as the setup is easier there.
-    Setup the proxy to point to your docker container. A tutorial can be found [here](ios-proxy).
-    Afterwards go to _mitm.it_ and install the certificate. The tutorial for this step can be found [here](mitmproxy-certs)
-    * If you have only a Android device, please refer to this tutorial [here](mitmproxy-android)
+    Setup the proxy to point to your docker container. A tutorial can be found [here][ios-proxy].
+    Afterwards go to _mitm.it_ and install the certificate. The tutorial for this step can be found [here][mitmproxy-certs]
+    * If you have only a Android device, please refer to this tutorial [here][mitmproxy-android]
     
 1. Open the prosenic app and refresh all your devices
 1. On the computer, where your mitmproxy docker container is running, open  the following link [http://localhost:8081](http://localhost:8081)
