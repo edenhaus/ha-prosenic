@@ -2,18 +2,18 @@
 
 # Prosenic Home Assistant component
 A full featured Homeassistant component to control Prosenic vacuum cleaner locally without the cloud. 
-This component is based on the underlying PyTuya library available [here](pytuya).
+This component is based on the underlying PyTuya library available [here][pytuya].
 
 ## Component setup    
 Once the component has been installed, you need to configure it in order to make it work.
 First we need to find out the _device_id_, _ip address_ and _local key_ of your prosenic vacuum cleaner.
 Todo that you have multiple options:
  * Use *mitmproxy* to intercept the connection between the prosenic app and the tuya cloud (Described below and I used this approach)
- * Read the following [link](tuyaapi-docs)
+ * Read the following [link][tuyaapi-docs]
      
 ### Extracting the required data with mitmproxy.
 
-1. First we need to setup mitmproxy. The easiest way is to setup a docker container. Other installation type can be found [here](mitmproxy-install)
+1. First we need to setup mitmproxy. The easiest way is to setup a docker container. Other installation type can be found [here][mitmproxy-install]
     Below the docker-compose script, which will setup mitmproxy on port 8080 with the web interface on port 8081
     ```yaml
     version: "3.3"
@@ -27,9 +27,9 @@ Todo that you have multiple options:
     ```
 1. 
     * If you have an iPhone or iPad, use please one of these device as the setup is easier there.
-    Setup the proxy to point to your docker container. A tutorial can be found [here](ios-proxy).
-    Afterwards go to _mitm.it_ and install the certificate. The tutorial for this step can be found [here](mitmproxy-certs)
-    * If you have only a Android device, please refer to this tutorial [here](mitmproxy-android)
+    Setup the proxy to point to your docker container. A tutorial can be found [here][ios-proxy].
+    Afterwards go to _mitm.it_ and install the certificate. The tutorial for this step can be found [here][mitmproxy-certs]
+    * If you have only a Android device, please refer to this tutorial [here][mitmproxy-android]
     
 1. Open the prosenic app and refresh all your devices
 1. On the computer, where your mitmproxy docker container is running, open  the following link [http://localhost:8081](http://localhost:8081)
@@ -111,7 +111,7 @@ If you find a problem/bug or you have a feature request, please open an issue.
 - Automated test
 
 [hacs]: https://hacs.xyz
-[hacsbadge]: https://img.shields.io/badge/HACS-CUSTOM-inactive?style=for-the-badge
+[hacsbadge]: https://img.shields.io/badge/HACS-DEFAULT-inactive?style=for-the-badge
 [license-shield]: https://img.shields.io/github/license/edenhaus/ha-prosenic?style=for-the-badge
 [maintenance-shield]: https://img.shields.io/badge/Maintainer-Robert%20Resch-blue?style=for-the-badge
 [pytuya]: https://github.com/clach04/python-tuya
