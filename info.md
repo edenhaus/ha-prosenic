@@ -29,7 +29,8 @@ Todo that you have multiple options:
     * If you have an iPhone or iPad, use please one of these device as the setup is easier there.
     Setup the proxy to point to your docker container. A tutorial can be found [here][ios-proxy].
     Afterwards go to _mitm.it_ and install the certificate. The tutorial for this step can be found [here][mitmproxy-certs]
-    * If you have only a Android device, please refer to this tutorial [here][mitmproxy-android]
+    * If yoi have a rooted Android device, then you can install the certificate nearly the same way as iOS. Only be sure you install it as System Certificate.
+    * If you have a "normal" (not rooted) Android device, please refer to this tutorial [here][mitmproxy-android]
     
 1. Open the prosenic app and refresh all your devices
 1. On the computer, where your mitmproxy docker container is running, open  the following link [http://localhost:8081](http://localhost:8081)
