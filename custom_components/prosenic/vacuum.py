@@ -365,7 +365,7 @@ class ProsenicVacuum(StateVacuumDevice):
                     self._additional_attr[ATTR_CLEANING_TIME] = int(v)
 
                 elif field == Fields.SWEEP_OR_MOP:
-                    self._additional_attr[ATTR_MOP_EQUIPPED] = bool(v)
+                    self._additional_attr[ATTR_MOP_EQUIPPED] = False if v == "sweep" else True
 
             except (KeyError, ValueError):
                 _LOGGER.warning(
