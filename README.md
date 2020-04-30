@@ -139,6 +139,7 @@ Edit it by adding the following lines:
 ## Additional Information
 
 Currently this integration is only tested with a Prosenic (Cocosmart) 820T, because I only have this one.
+@gibranZawahra confirmed that also the Model 830 is working.
 Please give me feedback, if it works with other models too.
 
 The integration is communicating locally only, so you can block the access of your vacuum robot to the internet.
