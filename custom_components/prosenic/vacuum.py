@@ -21,7 +21,7 @@ from homeassistant.components.vacuum import (
     SUPPORT_START,
     SUPPORT_STATE,
     SUPPORT_STOP,
-    StateVacuumDevice,
+    StateVacuumEntity,
     SUPPORT_PAUSE,
     STATE_RETURNING,
     ATTR_CLEANED_AREA
@@ -173,7 +173,7 @@ async def async_setup_platform(hass, config, async_add_entities, discovery_info=
     async_add_entities([robot], update_before_add=True)
 
 
-class ProsenicVacuum(StateVacuumDevice):
+class ProsenicVacuum(StateVacuumEntity):
     """Representation of a Prosenic Vacuum cleaner robot."""
 
     def __init__(self, name: str, device: Device, remember_fan_speed: bool):
