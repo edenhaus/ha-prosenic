@@ -3,6 +3,8 @@
 [![hacs][hacsbadge]][hacs]
 
 # Prosenic Home Assistant component
+## My prosenic vacuum broke some days ago and I bought a vacuum robot from a different manufacturer. I will discontinue this component, but leave it on HACS.
+
 A full featured Homeassistant component to control Prosenic vacuum cleaner locally without the cloud. 
 This component is based on the underlying PyTuya library available [here][pytuya].
 
